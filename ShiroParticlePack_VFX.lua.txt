@@ -1,0 +1,1617 @@
+--[[
+╔══════════════════════════════════════════════════════════════════╗
+║     [Shiro Dev Patreon] - Particle Set — SCRIPT COMPLETO        ║
+║     Todas as VFX reconstituídas em Lua puro                     ║
+║     • Leitura gradual (0.6s por VFX) → sem crash               ║
+║     • Grid automático 3 studs                                   ║
+║     • Cada VFX numa sub-pasta com nome no Explorer              ║
+║     • GUI mobile compacta com progresso                         ║
+╚══════════════════════════════════════════════════════════════════╝
+
+  COMO USAR:
+  1. Cole este arquivo .lua dentro de  Codex/workspace/VFX/
+  2. Execute no Codex
+  3. Clique "▶ Iniciar" na GUI — aguarde o carregamento gradual
+  4. Todas as VFX aparecem no workspace em grid 3 studs
+  5. Exporte pelo botão "📤 Exportar" ou copie a pasta VFX_Pack
+
+  COMPATÍVEL COM: Codex Mobile, Script-Ware M, Delta, Arceus X
+]]
+
+-- ══════════════════════════════════════════
+--              CONFIGURAÇÕES
+-- ══════════════════════════════════════════
+local CFG = {
+    DELAY        = 0.6,              -- segundos entre cada VFX (evita crash)
+    ESPACO       = 3,                -- studs entre cada VFX no grid
+    COLUNAS      = 5,                -- colunas no grid
+    INICIO       = Vector3.new(0, 5, 0),
+    PASTA_NOME   = "VFX_Pack",       -- pasta raiz no Explorer
+    PACK_NOME    = "[Shiro Dev] Particle Set",
+}
+
+-- ══════════════════════════════════════════
+--         DEFINIÇÕES DAS VFX DO PACK
+-- ══════════════════════════════════════════
+local VFX_PACK = {
+
+    -- ══════════════════════
+    -- 1. FIRE EYE
+    -- ══════════════════════
+    {
+        nome = "Fire_Eye",
+        descricao = "Olho de fogo com partículas em anel",
+        cor_base = BrickColor.new("Really black"),
+        parts = {
+            {
+                nome = "Core",
+                tamanho = Vector3.new(0.5, 0.5, 0.5),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(255, 80, 0),
+                transparencia = 0.3,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "OuterFlame",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 0)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 150, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 220, 100)),
+                }),
+                LightEmission = 0.8,
+                LightInfluence = 0.2,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.8),
+                    NumberSequenceKeypoint.new(0.5, 0.5),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.7, 0.3),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 60,
+                Lifetime = NumberRange.new(0.5, 1.2),
+                Speed = NumberRange.new(1, 3),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-90, 90),
+                EmissionDirection = Enum.NormalId.Top,
+                LockedToPart = false,
+                ZOffset = 0.2,
+            },
+            {
+                nome = "InnerCore",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 200)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 100, 0)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 40,
+                Lifetime = NumberRange.new(0.3, 0.6),
+                Speed = NumberRange.new(0.5, 1.5),
+                SpreadAngle = Vector2.new(180, 180),
+                LockedToPart = false,
+                ZOffset = 0.1,
+            },
+            {
+                nome = "InnerFireRing",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 0)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 60, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0)),
+                }),
+                LightEmission = 0.6,
+                LightInfluence = 0.3,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.6),
+                    NumberSequenceKeypoint.new(0.5, 0.4),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(0.8, 0.6),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 30,
+                Lifetime = NumberRange.new(0.8, 1.5),
+                Speed = NumberRange.new(0, 0.5),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(50, 150),
+                LockedToPart = true,
+                ZOffset = 0,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 2. FIRE V.1
+    -- ══════════════════════
+    {
+        nome = "Fire_V1",
+        descricao = "Fogo clássico estilo Roblox aprimorado",
+        cor_base = BrickColor.new("Really black"),
+        parts = {
+            {
+                nome = "Base",
+                tamanho = Vector3.new(0.4, 0.4, 0.4),
+                forma = Enum.PartType.Block,
+                material = Enum.Material.SmoothPlastic,
+                cor = Color3.fromRGB(30, 10, 0),
+                transparencia = 0.9,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "MainFire",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 0)),
+                    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(255, 80, 0)),
+                    ColorSequenceKeypoint.new(0.7, Color3.fromRGB(200, 30, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 0)),
+                }),
+                LightEmission = 0.9,
+                LightInfluence = 0.1,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(0.2, 0.8),
+                    NumberSequenceKeypoint.new(0.7, 0.6),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.6, 0.2),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 80,
+                Lifetime = NumberRange.new(0.6, 1.4),
+                Speed = NumberRange.new(2, 5),
+                SpreadAngle = Vector2.new(20, 20),
+                Rotation = NumberRange.new(-30, 30),
+                RotSpeed = NumberRange.new(-60, 60),
+                EmissionDirection = Enum.NormalId.Top,
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "Embers",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 100)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 0)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.15),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.5, 0.3),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 25,
+                Lifetime = NumberRange.new(1, 2),
+                Speed = NumberRange.new(3, 8),
+                SpreadAngle = Vector2.new(60, 60),
+                Acceleration = Vector3.new(0, 2, 0),
+                LockedToPart = false,
+                ZOffset = 0.3,
+            },
+            {
+                nome = "Smoke",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 60, 60)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 120, 120)),
+                }),
+                LightEmission = 0,
+                LightInfluence = 1,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(0.4, 1.2),
+                    NumberSequenceKeypoint.new(1, 2),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.6),
+                    NumberSequenceKeypoint.new(0.6, 0.8),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 12,
+                Lifetime = NumberRange.new(2, 4),
+                Speed = NumberRange.new(1, 3),
+                SpreadAngle = Vector2.new(15, 15),
+                EmissionDirection = Enum.NormalId.Top,
+                LockedToPart = false,
+                ZOffset = 0.5,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 3. FLY EFFECT
+    -- ══════════════════════
+    {
+        nome = "Fly_Effect",
+        descricao = "Rastro de voo com partículas e brilho",
+        cor_base = BrickColor.new("Bright blue"),
+        parts = {
+            {
+                nome = "Core",
+                tamanho = Vector3.new(0.3, 0.3, 0.3),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(100, 200, 255),
+                transparencia = 0.5,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "MainTrail",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 240, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60, 180, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 60, 200)),
+                }),
+                LightEmission = 0.7,
+                LightInfluence = 0.2,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.5),
+                    NumberSequenceKeypoint.new(0.5, 0.3),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.1),
+                    NumberSequenceKeypoint.new(0.6, 0.5),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 50,
+                Lifetime = NumberRange.new(0.5, 1),
+                Speed = NumberRange.new(1, 4),
+                SpreadAngle = Vector2.new(60, 60),
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "Sparkle",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 200, 255)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 20,
+                Lifetime = NumberRange.new(0.3, 0.8),
+                Speed = NumberRange.new(2, 6),
+                SpreadAngle = Vector2.new(180, 180),
+                LockedToPart = false,
+                ZOffset = 0.4,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 4. CHAIN SHIELD
+    -- ══════════════════════
+    {
+        nome = "Chain_Shield",
+        descricao = "Escudo de correntes e energia",
+        cor_base = BrickColor.new("Medium stone grey"),
+        parts = {
+            {
+                nome = "ShieldCore",
+                tamanho = Vector3.new(1, 1, 1),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.ForceField,
+                cor = Color3.fromRGB(150, 200, 255),
+                transparencia = 0.7,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "ShieldRing",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 220, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(100, 180, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 100, 200)),
+                }),
+                LightEmission = 0.5,
+                LightInfluence = 0.4,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.8),
+                    NumberSequenceKeypoint.new(0.5, 0.6),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(0.7, 0.6),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 35,
+                Lifetime = NumberRange.new(1, 2),
+                Speed = NumberRange.new(0, 1),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-180, 180),
+                LockedToPart = true,
+                ZOffset = 0.2,
+            },
+            {
+                nome = "ChainSparks",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 200, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 100, 255)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(0.3, 0.2),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.5, 0.3),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 20,
+                Lifetime = NumberRange.new(0.3, 0.8),
+                Speed = NumberRange.new(2, 5),
+                SpreadAngle = Vector2.new(360, 360),
+                LockedToPart = false,
+                ZOffset = 0.5,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 5. BUTTERFLY
+    -- ══════════════════════
+    {
+        nome = "Butterfly",
+        descricao = "Borboletas mágicas de partícula",
+        cor_base = BrickColor.new("Hot pink"),
+        parts = {
+            {
+                nome = "AuraCore",
+                tamanho = Vector3.new(0.3, 0.3, 0.3),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(255, 150, 220),
+                transparencia = 0.6,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "ButterflyMain",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 240)),
+                    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(255, 100, 200)),
+                    ColorSequenceKeypoint.new(0.7, Color3.fromRGB(200, 50, 180)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 0, 100)),
+                }),
+                LightEmission = 0.6,
+                LightInfluence = 0.3,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.4),
+                    NumberSequenceKeypoint.new(0.4, 0.6),
+                    NumberSequenceKeypoint.new(0.8, 0.4),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.1),
+                    NumberSequenceKeypoint.new(0.7, 0.4),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 25,
+                Lifetime = NumberRange.new(1.5, 3),
+                Speed = NumberRange.new(1, 4),
+                SpreadAngle = Vector2.new(180, 180),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-120, 120),
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "PixieDust",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 200)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 180, 255)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.15),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 15,
+                Lifetime = NumberRange.new(0.8, 1.5),
+                Speed = NumberRange.new(0.5, 2),
+                SpreadAngle = Vector2.new(360, 360),
+                Acceleration = Vector3.new(0, -1, 0),
+                LockedToPart = false,
+                ZOffset = 0.3,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 6. SHOCK
+    -- ══════════════════════
+    {
+        nome = "Shock",
+        descricao = "Choque elétrico com raios",
+        cor_base = BrickColor.new("Bright yellow"),
+        parts = {
+            {
+                nome = "ElectricCore",
+                tamanho = Vector3.new(0.4, 0.4, 0.4),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(255, 255, 0),
+                transparencia = 0.3,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "Lightning",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(220, 255, 0)),
+                    ColorSequenceKeypoint.new(0.7, Color3.fromRGB(255, 200, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 100, 0)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.1),
+                    NumberSequenceKeypoint.new(0.2, 0.6),
+                    NumberSequenceKeypoint.new(0.6, 0.2),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.4, 0.1),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 70,
+                Lifetime = NumberRange.new(0.1, 0.4),
+                Speed = NumberRange.new(3, 10),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-360, 360),
+                LockedToPart = false,
+                ZOffset = 0.1,
+            },
+            {
+                nome = "ElectricArcs",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 255, 100)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 0)),
+                }),
+                LightEmission = 0.8,
+                LightInfluence = 0.1,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.4),
+                    NumberSequenceKeypoint.new(0.5, 0.2),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 20,
+                Lifetime = NumberRange.new(0.2, 0.5),
+                Speed = NumberRange.new(5, 12),
+                SpreadAngle = Vector2.new(180, 180),
+                LockedToPart = false,
+                ZOffset = 0.3,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 7. FLARE
+    -- ══════════════════════
+    {
+        nome = "Flare",
+        descricao = "Explosão de luz solar",
+        cor_base = BrickColor.new("Bright orange"),
+        parts = {
+            {
+                nome = "FlareCore",
+                tamanho = Vector3.new(0.5, 0.5, 0.5),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(255, 200, 80),
+                transparencia = 0.2,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "SolarRays",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 220)),
+                    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 200, 0)),
+                    ColorSequenceKeypoint.new(0.8, Color3.fromRGB(255, 100, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 50, 0)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(0.3, 1.5),
+                    NumberSequenceKeypoint.new(0.7, 0.8),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.5, 0.2),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 30,
+                Lifetime = NumberRange.new(0.4, 0.9),
+                Speed = NumberRange.new(4, 10),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-200, 200),
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "Coronas",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 200)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 150, 0)),
+                }),
+                LightEmission = 0.9,
+                LightInfluence = 0.1,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.8),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 15,
+                Lifetime = NumberRange.new(0.6, 1.2),
+                Speed = NumberRange.new(1, 3),
+                SpreadAngle = Vector2.new(360, 360),
+                LockedToPart = false,
+                ZOffset = 0.5,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 8. SHIELD
+    -- ══════════════════════
+    {
+        nome = "Shield",
+        descricao = "Escudo energético protetor",
+        cor_base = BrickColor.new("Toothpaste"),
+        parts = {
+            {
+                nome = "ShieldBall",
+                tamanho = Vector3.new(1.2, 1.2, 1.2),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.ForceField,
+                cor = Color3.fromRGB(0, 220, 255),
+                transparencia = 0.6,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "ShieldSurface",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 240, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 200, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 200)),
+                }),
+                LightEmission = 0.7,
+                LightInfluence = 0.2,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(0.5, 0.6),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(0.6, 0.5),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 40,
+                Lifetime = NumberRange.new(1, 2),
+                Speed = NumberRange.new(0.5, 2),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-90, 90),
+                LockedToPart = true,
+                ZOffset = 0.6,
+            },
+            {
+                nome = "EnergyBubble",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 255, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 180, 255)),
+                }),
+                LightEmission = 0.5,
+                LightInfluence = 0.4,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(0.5, 0.4),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.4),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 20,
+                Lifetime = NumberRange.new(1.5, 3),
+                Speed = NumberRange.new(0, 0.5),
+                SpreadAngle = Vector2.new(360, 360),
+                LockedToPart = true,
+                ZOffset = 0.8,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 9. SLASHES
+    -- ══════════════════════
+    {
+        nome = "Slashes",
+        descricao = "Cortes de espada com energia",
+        cor_base = BrickColor.new("White"),
+        parts = {
+            {
+                nome = "BladeCore",
+                tamanho = Vector3.new(0.2, 0.8, 0.1),
+                forma = Enum.PartType.Block,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(200, 200, 255),
+                transparencia = 0.5,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "SlashTrail",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 180, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 100, 200)),
+                }),
+                LightEmission = 0.8,
+                LightInfluence = 0.1,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.1),
+                    NumberSequenceKeypoint.new(0.2, 0.8),
+                    NumberSequenceKeypoint.new(0.6, 0.4),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.5, 0.2),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 60,
+                Lifetime = NumberRange.new(0.15, 0.4),
+                Speed = NumberRange.new(5, 15),
+                SpreadAngle = Vector2.new(30, 5),
+                Rotation = NumberRange.new(-45, 45),
+                RotSpeed = NumberRange.new(-180, 180),
+                LockedToPart = false,
+                ZOffset = 0.1,
+            },
+            {
+                nome = "BladeGlow",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 220, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 80, 255)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.5),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.5),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 15,
+                Lifetime = NumberRange.new(0.2, 0.5),
+                Speed = NumberRange.new(1, 3),
+                SpreadAngle = Vector2.new(90, 10),
+                LockedToPart = false,
+                ZOffset = 0.3,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 10. SQUASH
+    -- ══════════════════════
+    {
+        nome = "Squash",
+        descricao = "Impacto com onda de choque",
+        cor_base = BrickColor.new("Bright green"),
+        parts = {
+            {
+                nome = "ImpactCore",
+                tamanho = Vector3.new(0.5, 0.2, 0.5),
+                forma = Enum.PartType.Cylinder,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(0, 255, 100),
+                transparencia = 0.4,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "ShockWave",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 255, 200)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 220, 80)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 20)),
+                }),
+                LightEmission = 0.6,
+                LightInfluence = 0.3,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.5),
+                    NumberSequenceKeypoint.new(0.3, 2),
+                    NumberSequenceKeypoint.new(0.7, 1),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.4, 0.3),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 20,
+                Lifetime = NumberRange.new(0.4, 0.8),
+                Speed = NumberRange.new(3, 8),
+                SpreadAngle = Vector2.new(360, 10),
+                EmissionDirection = Enum.NormalId.Top,
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "DebrisDust",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 255, 150)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 100, 50)),
+                }),
+                LightEmission = 0.3,
+                LightInfluence = 0.7,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.2),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 30,
+                Lifetime = NumberRange.new(0.5, 1.5),
+                Speed = NumberRange.new(2, 6),
+                SpreadAngle = Vector2.new(360, 40),
+                Acceleration = Vector3.new(0, -5, 0),
+                LockedToPart = false,
+                ZOffset = 0.2,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 11. WAVES
+    -- ══════════════════════
+    {
+        nome = "Waves",
+        descricao = "Ondas de energia elemental",
+        cor_base = BrickColor.new("Bright blue"),
+        parts = {
+            {
+                nome = "WaveSource",
+                tamanho = Vector3.new(0.3, 0.3, 0.3),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(0, 150, 255),
+                transparencia = 0.5,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "WaveRing",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 200, 255)),
+                    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 150, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 50, 200)),
+                }),
+                LightEmission = 0.6,
+                LightInfluence = 0.3,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(0.4, 1.8),
+                    NumberSequenceKeypoint.new(0.8, 1.2),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.5, 0.3),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 15,
+                Lifetime = NumberRange.new(0.8, 1.5),
+                Speed = NumberRange.new(2, 6),
+                SpreadAngle = Vector2.new(360, 10),
+                EmissionDirection = Enum.NormalId.Top,
+                Rotation = NumberRange.new(0, 360),
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "WaveParticles",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 240, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 100, 255)),
+                }),
+                LightEmission = 0.8,
+                LightInfluence = 0.1,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.4),
+                    NumberSequenceKeypoint.new(0.5, 0.2),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.1),
+                    NumberSequenceKeypoint.new(0.6, 0.5),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 30,
+                Lifetime = NumberRange.new(0.5, 1.2),
+                Speed = NumberRange.new(1, 5),
+                SpreadAngle = Vector2.new(360, 30),
+                LockedToPart = false,
+                ZOffset = 0.3,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 12. PBURSTS
+    -- ══════════════════════
+    {
+        nome = "PBursts",
+        descricao = "Explosão em burst de partículas",
+        cor_base = BrickColor.new("Magenta"),
+        parts = {
+            {
+                nome = "BurstOrigin",
+                tamanho = Vector3.new(0.2, 0.2, 0.2),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(255, 0, 200),
+                transparencia = 0.3,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "BurstMain",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                    ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255, 100, 255)),
+                    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(200, 0, 200)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 0, 80)),
+                }),
+                LightEmission = 0.9,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.1),
+                    NumberSequenceKeypoint.new(0.1, 1.2),
+                    NumberSequenceKeypoint.new(0.5, 0.5),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.3, 0.1),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 5,
+                Lifetime = NumberRange.new(0.3, 0.7),
+                Speed = NumberRange.new(8, 20),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-360, 360),
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "AfterGlow",
+                Texture = "rbxassetid://1699715537",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 0, 100)),
+                }),
+                LightEmission = 0.7,
+                LightInfluence = 0.2,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.6),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 10,
+                Lifetime = NumberRange.new(0.5, 1),
+                Speed = NumberRange.new(3, 8),
+                SpreadAngle = Vector2.new(360, 360),
+                LockedToPart = false,
+                ZOffset = 0.4,
+            },
+        },
+    },
+
+    -- ══════════════════════
+    -- 13. PSPARKS
+    -- ══════════════════════
+    {
+        nome = "pSparks",
+        descricao = "Faíscas de partícula rápidas",
+        cor_base = BrickColor.new("Bright orange"),
+        parts = {
+            {
+                nome = "SparkOrigin",
+                tamanho = Vector3.new(0.2, 0.2, 0.2),
+                forma = Enum.PartType.Ball,
+                material = Enum.Material.Neon,
+                cor = Color3.fromRGB(255, 180, 0),
+                transparencia = 0.3,
+                anchored = true,
+            }
+        },
+        particulas = {
+            {
+                nome = "HotSparks",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 200)),
+                    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(255, 180, 0)),
+                    ColorSequenceKeypoint.new(0.8, Color3.fromRGB(255, 80, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 20, 0)),
+                }),
+                LightEmission = 1,
+                LightInfluence = 0,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.25),
+                    NumberSequenceKeypoint.new(0.3, 0.18),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0),
+                    NumberSequenceKeypoint.new(0.7, 0.2),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 45,
+                Lifetime = NumberRange.new(0.2, 0.6),
+                Speed = NumberRange.new(6, 16),
+                SpreadAngle = Vector2.new(360, 360),
+                Rotation = NumberRange.new(0, 360),
+                RotSpeed = NumberRange.new(-180, 180),
+                Acceleration = Vector3.new(0, -10, 0),
+                LockedToPart = false,
+                ZOffset = 0,
+            },
+            {
+                nome = "SparkGlow",
+                Texture = "rbxassetid://10926143440",
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 220, 100)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 100, 0)),
+                }),
+                LightEmission = 0.8,
+                LightInfluence = 0.1,
+                Size = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.3),
+                    NumberSequenceKeypoint.new(1, 0),
+                }),
+                Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.5),
+                    NumberSequenceKeypoint.new(1, 1),
+                }),
+                Rate = 15,
+                Lifetime = NumberRange.new(0.1, 0.3),
+                Speed = NumberRange.new(2, 5),
+                SpreadAngle = Vector2.new(180, 180),
+                LockedToPart = false,
+                ZOffset = 0.2,
+            },
+        },
+    },
+}
+
+-- ══════════════════════════════════════════
+--     FUNÇÕES DE CRIAÇÃO DAS INSTÂNCIAS
+-- ══════════════════════════════════════════
+
+local function posGrid(idx)
+    local col = (idx-1) % CFG.COLUNAS
+    local row = math.floor((idx-1) / CFG.COLUNAS)
+    return CFG.INICIO + Vector3.new(col * CFG.ESPACO, 0, row * CFG.ESPACO)
+end
+
+local function applyPE(pe, props)
+    local campos = {
+        "Texture","Color","LightEmission","LightInfluence","Size","Transparency",
+        "Rate","Lifetime","Speed","SpreadAngle","Rotation","RotSpeed",
+        "EmissionDirection","LockedToPart","ZOffset","Acceleration",
+        "FlipbookMode","FlipbookLayout","FlipbookFramerate","FlipbookStartRandom",
+        "ShapeStyle","ShapeInOut","ShapePartial","TimeScale","VelocityInheritance",
+    }
+    for _, campo in ipairs(campos) do
+        if props[campo] ~= nil then
+            pcall(function() pe[campo] = props[campo] end)
+        end
+    end
+end
+
+local function criarVFX(vfxDef, idx)
+    local pos = posGrid(idx)
+
+    local pasta = Instance.new("Folder")
+    pasta.Name = vfxDef.nome
+
+    local parts = {}
+    if vfxDef.parts and #vfxDef.parts > 0 then
+        for i, pd in ipairs(vfxDef.parts) do
+            local p = Instance.new("Part")
+            p.Name = pd.nome or (vfxDef.nome .. "_Part" .. i)
+            p.Size = pd.tamanho or Vector3.new(0.4, 0.4, 0.4)
+            p.CFrame = CFrame.new(pos)
+            p.Anchored = pd.anchored ~= false
+            p.CanCollide = false
+            p.CanQuery = false
+            p.CastShadow = false
+            p.Material = pd.material or Enum.Material.SmoothPlastic
+            pcall(function() p.Color = pd.cor or Color3.fromRGB(255,255,255) end)
+            pcall(function() p.Transparency = pd.transparencia or 0 end)
+            pcall(function()
+                if pd.forma == Enum.PartType.Ball then
+                    p.Shape = Enum.PartType.Ball
+                elseif pd.forma == Enum.PartType.Cylinder then
+                    p.Shape = Enum.PartType.Cylinder
+                end
+            end)
+            p.Parent = pasta
+            table.insert(parts, p)
+        end
+    else
+        local p = Instance.new("Part")
+        p.Name = vfxDef.nome .. "_Anchor"
+        p.Size = Vector3.new(0.3, 0.3, 0.3)
+        p.CFrame = CFrame.new(pos)
+        p.Anchored = true
+        p.CanCollide = false
+        p.Transparency = 1
+        p.Parent = pasta
+        table.insert(parts, p)
+    end
+
+    local partePrincipal = parts[1]
+
+    if vfxDef.particulas then
+        for i, pDef in ipairs(vfxDef.particulas) do
+            local pe = Instance.new("ParticleEmitter")
+            pe.Name = pDef.nome or ("Particle_" .. i)
+            applyPE(pe, pDef)
+            pe.Parent = partePrincipal
+        end
+    end
+
+    -- Label flutuante
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "Label"
+    bb.Size = UDim2.new(0, 90, 0, 20)
+    bb.StudsOffset = Vector3.new(0, 1.5, 0)
+    bb.AlwaysOnTop = true
+    bb.Adornee = partePrincipal
+    bb.Parent = partePrincipal
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    lbl.BackgroundTransparency = 0.45
+    lbl.Text = vfxDef.nome:gsub("_", " ")
+    lbl.TextColor3 = Color3.fromRGB(255,255,255)
+    lbl.TextScaled = true
+    lbl.Font = Enum.Font.GothamBold
+    lbl.Parent = bb
+
+    local lblCorner = Instance.new("UICorner")
+    lblCorner.CornerRadius = UDim.new(0,4)
+    lblCorner.Parent = lbl
+
+    return pasta
+end
+
+-- ══════════════════════════════════════════
+--              GUI PRINCIPAL
+-- ══════════════════════════════════════════
+local Players  = game:GetService("Players")
+local UIS      = game:GetService("UserInputService")
+local PLAYER   = Players.LocalPlayer
+local PGUI     = PLAYER:WaitForChild("PlayerGui")
+
+local OLD = PGUI:FindFirstChild("ShiroPack_GUI")
+if OLD then OLD:Destroy() end
+
+local SG = Instance.new("ScreenGui")
+SG.Name = "ShiroPack_GUI"
+SG.ResetOnSpawn = false
+SG.DisplayOrder = 999
+SG.IgnoreGuiInset = true
+SG.Parent = PGUI
+
+local W = Instance.new("Frame")
+W.Name = "Window"
+W.Size = UDim2.new(0, 260, 0, 380)
+W.Position = UDim2.new(0.5, -130, 0.5, -190)
+W.BackgroundColor3 = Color3.fromRGB(10, 10, 16)
+W.BorderSizePixel = 0
+W.Parent = SG
+
+local WC = Instance.new("UICorner")
+WC.CornerRadius = UDim.new(0, 10)
+WC.Parent = W
+
+-- Header
+local H = Instance.new("Frame")
+H.Size = UDim2.new(1, 0, 0, 38)
+H.BackgroundColor3 = Color3.fromRGB(80, 20, 160)
+H.BorderSizePixel = 0
+H.Parent = W
+
+local HC = Instance.new("UICorner")
+HC.CornerRadius = UDim.new(0, 10)
+HC.Parent = H
+
+local HFix = Instance.new("Frame")
+HFix.Size = UDim2.new(1, 0, 0, 10)
+HFix.Position = UDim2.new(0, 0, 1, -10)
+HFix.BackgroundColor3 = Color3.fromRGB(80, 20, 160)
+HFix.BorderSizePixel = 0
+HFix.Parent = H
+
+local TITLE = Instance.new("TextLabel")
+TITLE.Size = UDim2.new(1, -70, 1, 0)
+TITLE.Position = UDim2.new(0, 10, 0, 0)
+TITLE.BackgroundTransparency = 1
+TITLE.Text = "🎆 Shiro Particle Pack"
+TITLE.TextColor3 = Color3.fromRGB(255, 255, 255)
+TITLE.TextSize = 12
+TITLE.Font = Enum.Font.GothamBold
+TITLE.TextXAlignment = Enum.TextXAlignment.Left
+TITLE.Parent = H
+
+local function mkHBtn(t, cor, ox)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, 26, 0, 26)
+    b.Position = UDim2.new(1, ox, 0.5, -13)
+    b.BackgroundColor3 = cor
+    b.Text = t
+    b.TextColor3 = Color3.fromRGB(255,255,255)
+    b.TextSize = 12
+    b.Font = Enum.Font.GothamBold
+    b.BorderSizePixel = 0
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 6)
+    c.Parent = b
+    b.Parent = H
+    return b
+end
+local XBTN = mkHBtn("✕", Color3.fromRGB(200,40,40), -30)
+local MBTN = mkHBtn("–", Color3.fromRGB(160,100,0), -60)
+XBTN.MouseButton1Click:Connect(function() SG:Destroy() end)
+
+local mini = false
+MBTN.MouseButton1Click:Connect(function()
+    mini = not mini
+    W.Size = mini and UDim2.new(0,260,0,38) or UDim2.new(0,260,0,380)
+    MBTN.Text = mini and "+" or "–"
+end)
+
+-- Drag
+local drag, ds, dp
+H.InputBegan:Connect(function(i)
+    if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
+        drag=true; ds=i.Position; dp=W.Position
+    end
+end)
+UIS.InputChanged:Connect(function(i)
+    if drag and (i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseMovement) then
+        local d = i.Position - ds
+        W.Position = UDim2.new(dp.X.Scale, dp.X.Offset+d.X, dp.Y.Scale, dp.Y.Offset+d.Y)
+    end
+end)
+UIS.InputEnded:Connect(function(i)
+    if i.UserInputType==Enum.UserInputType.Touch or i.UserInputType==Enum.UserInputType.MouseButton1 then drag=false end
+end)
+
+-- Info
+local INFO = Instance.new("TextLabel")
+INFO.Size = UDim2.new(1,-10,0,18)
+INFO.Position = UDim2.new(0,5,0,42)
+INFO.BackgroundTransparency = 1
+INFO.Text = "[Shiro Dev Patreon]  •  " .. #VFX_PACK .. " VFX  •  delay 0.6s/cada"
+INFO.TextColor3 = Color3.fromRGB(200, 160, 255)
+INFO.TextSize = 9
+INFO.Font = Enum.Font.Gotham
+INFO.TextXAlignment = Enum.TextXAlignment.Left
+INFO.Parent = W
+
+-- Barra de progresso
+local PBAR_BG = Instance.new("Frame")
+PBAR_BG.Size = UDim2.new(1,-10,0,8)
+PBAR_BG.Position = UDim2.new(0,5,0,62)
+PBAR_BG.BackgroundColor3 = Color3.fromRGB(30,30,40)
+PBAR_BG.BorderSizePixel = 0
+PBAR_BG.Parent = W
+local PBC = Instance.new("UICorner")
+PBC.CornerRadius = UDim.new(1,0)
+PBC.Parent = PBAR_BG
+
+local PBAR = Instance.new("Frame")
+PBAR.Size = UDim2.new(0,0,1,0)
+PBAR.BackgroundColor3 = Color3.fromRGB(140,60,255)
+PBAR.BorderSizePixel = 0
+PBAR.Parent = PBAR_BG
+local PC = Instance.new("UICorner")
+PC.CornerRadius = UDim.new(1,0)
+PC.Parent = PBAR
+
+-- Status
+local STATUS = Instance.new("TextLabel")
+STATUS.Size = UDim2.new(1,-10,0,15)
+STATUS.Position = UDim2.new(0,5,0,72)
+STATUS.BackgroundTransparency = 1
+STATUS.Text = "Pronto — clique ▶ Iniciar"
+STATUS.TextColor3 = Color3.fromRGB(160,160,255)
+STATUS.TextSize = 9
+STATUS.Font = Enum.Font.Gotham
+STATUS.TextXAlignment = Enum.TextXAlignment.Left
+STATUS.TextTruncate = Enum.TextTruncate.AtEnd
+STATUS.Parent = W
+
+-- Lista scroll
+local SCROLL = Instance.new("ScrollingFrame")
+SCROLL.Size = UDim2.new(1,-10,1,-152)
+SCROLL.Position = UDim2.new(0,5,0,90)
+SCROLL.BackgroundColor3 = Color3.fromRGB(14,14,20)
+SCROLL.BorderSizePixel = 0
+SCROLL.ScrollBarThickness = 3
+SCROLL.ScrollBarImageColor3 = Color3.fromRGB(120,60,220)
+SCROLL.CanvasSize = UDim2.new(0,0,0,0)
+SCROLL.Parent = W
+
+local SC = Instance.new("UICorner")
+SC.CornerRadius = UDim.new(0,6)
+SC.Parent = SCROLL
+
+local SLAY = Instance.new("UIListLayout")
+SLAY.Padding = UDim.new(0,3)
+SLAY.SortOrder = Enum.SortOrder.LayoutOrder
+SLAY.Parent = SCROLL
+
+local SPAD = Instance.new("UIPadding")
+SPAD.PaddingTop = UDim.new(0,4)
+SPAD.PaddingLeft = UDim.new(0,4)
+SPAD.PaddingRight = UDim.new(0,4)
+SPAD.Parent = SCROLL
+
+-- Área botões
+local BAREA = Instance.new("Frame")
+BAREA.Size = UDim2.new(1,0,0,55)
+BAREA.Position = UDim2.new(0,0,1,-55)
+BAREA.BackgroundColor3 = Color3.fromRGB(10,10,16)
+BAREA.BorderSizePixel = 0
+BAREA.Parent = W
+
+local BL = Instance.new("UIListLayout")
+BL.FillDirection = Enum.FillDirection.Horizontal
+BL.HorizontalAlignment = Enum.HorizontalAlignment.Center
+BL.VerticalAlignment = Enum.VerticalAlignment.Center
+BL.Padding = UDim.new(0,5)
+BL.Parent = BAREA
+
+local function mkBtn(txt, cor)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0,74,0,30)
+    b.BackgroundColor3 = cor
+    b.Text = txt
+    b.TextColor3 = Color3.fromRGB(255,255,255)
+    b.TextSize = 10
+    b.Font = Enum.Font.GothamBold
+    b.BorderSizePixel = 0
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0,7)
+    c.Parent = b
+    b.Parent = BAREA
+    return b
+end
+
+local B_START = mkBtn("▶ Iniciar",   Color3.fromRGB(80,30,180))
+local B_STOP  = mkBtn("⏹ Parar",    Color3.fromRGB(160,40,40))
+local B_CLEAR = mkBtn("🗑 Limpar",  Color3.fromRGB(60,30,30))
+
+-- ══════════════════════════════════════════
+--          LÓGICA DE CARREGAMENTO
+-- ══════════════════════════════════════════
+local PASTA_RAIZ = nil
+local itemFrames = {}
+local carregando = false
+local carregados = 0
+local instancias = {}
+
+local function garantirPasta()
+    if PASTA_RAIZ and PASTA_RAIZ.Parent then return PASTA_RAIZ end
+    local ex = workspace:FindFirstChild(CFG.PASTA_NOME)
+    if ex then ex:Destroy() end
+    PASTA_RAIZ = Instance.new("Folder")
+    PASTA_RAIZ.Name = CFG.PASTA_NOME
+    PASTA_RAIZ.Parent = workspace
+    return PASTA_RAIZ
+end
+
+local function setStatus(txt, cor)
+    STATUS.Text = txt
+    STATUS.TextColor3 = cor or Color3.fromRGB(160,160,255)
+end
+
+local function setProgress(n, total)
+    local pct = n / total
+    PBAR:TweenSize(UDim2.new(pct, 0, 1, 0), "Out", "Quad", 0.3, true)
+end
+
+local function updateItem(nome, estado)
+    local f = itemFrames[nome]
+    if not f then return end
+    local dot = f:FindFirstChild("Dot")
+    if not dot then return end
+    if estado == "ok" then
+        dot.BackgroundColor3 = Color3.fromRGB(0,220,80)
+    elseif estado == "loading" then
+        dot.BackgroundColor3 = Color3.fromRGB(255,200,0)
+    else
+        dot.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    end
+end
+
+local function construirLista()
+    for _, v in ipairs(SCROLL:GetChildren()) do
+        if v:IsA("Frame") then v:Destroy() end
+    end
+    itemFrames = {}
+
+    for i, vfx in ipairs(VFX_PACK) do
+        local item = Instance.new("Frame")
+        item.Size = UDim2.new(1,-6,0,32)
+        item.BackgroundColor3 = Color3.fromRGB(20,20,30)
+        item.BorderSizePixel = 0
+        item.LayoutOrder = i
+        item.Parent = SCROLL
+
+        local ic = Instance.new("UICorner")
+        ic.CornerRadius = UDim.new(0,6)
+        ic.Parent = item
+
+        -- Número
+        local num = Instance.new("TextLabel")
+        num.Size = UDim2.new(0,20,1,0)
+        num.Position = UDim2.new(0,4,0,0)
+        num.BackgroundTransparency = 1
+        num.Text = tostring(i)
+        num.TextColor3 = Color3.fromRGB(120,80,200)
+        num.TextSize = 9
+        num.Font = Enum.Font.GothamBold
+        num.Parent = item
+
+        -- Dot
+        local dot = Instance.new("Frame")
+        dot.Name = "Dot"
+        dot.Size = UDim2.new(0,7,0,7)
+        dot.Position = UDim2.new(0,26,0.5,-3.5)
+        dot.BackgroundColor3 = Color3.fromRGB(60,60,60)
+        dot.BorderSizePixel = 0
+        local dc = Instance.new("UICorner")
+        dc.CornerRadius = UDim.new(1,0)
+        dc.Parent = dot
+        dot.Parent = item
+
+        -- Ícone
+        local ico = Instance.new("TextLabel")
+        ico.Size = UDim2.new(0,16,1,0)
+        ico.Position = UDim2.new(0,36,0,0)
+        ico.BackgroundTransparency = 1
+        ico.Text = "✨"
+        ico.TextSize = 11
+        ico.Font = Enum.Font.Gotham
+        ico.TextColor3 = Color3.fromRGB(255,200,80)
+        ico.Parent = item
+
+        -- Nome
+        local nlbl = Instance.new("TextLabel")
+        nlbl.Size = UDim2.new(1,-96,1,0)
+        nlbl.Position = UDim2.new(0,54,0,0)
+        nlbl.BackgroundTransparency = 1
+        nlbl.Text = vfx.nome:gsub("_"," ")
+        nlbl.TextColor3 = Color3.fromRGB(220,220,220)
+        nlbl.TextSize = 10
+        nlbl.Font = Enum.Font.Gotham
+        nlbl.TextXAlignment = Enum.TextXAlignment.Left
+        nlbl.TextTruncate = Enum.TextTruncate.AtEnd
+        nlbl.Parent = item
+
+        -- Badge PE count
+        local pe_count = vfx.particulas and #vfx.particulas or 0
+        local badge = Instance.new("TextLabel")
+        badge.Size = UDim2.new(0,36,0,16)
+        badge.Position = UDim2.new(1,-40,0.5,-8)
+        badge.BackgroundColor3 = Color3.fromRGB(50,20,100)
+        badge.BorderSizePixel = 0
+        badge.Text = "PE×"..pe_count
+        badge.TextColor3 = Color3.fromRGB(200,160,255)
+        badge.TextSize = 8
+        badge.Font = Enum.Font.GothamBold
+        local bc = Instance.new("UICorner")
+        bc.CornerRadius = UDim.new(0,4)
+        bc.Parent = badge
+        badge.Parent = item
+
+        itemFrames[vfx.nome] = item
+    end
+
+    SCROLL.CanvasSize = UDim2.new(0,0,0,#VFX_PACK*35+8)
+end
+
+-- ══════════════════════════════════════════
+--         BOTÕES PRINCIPAIS
+-- ══════════════════════════════════════════
+
+B_START.MouseButton1Click:Connect(function()
+    if carregando then return end
+    carregando = true
+    carregados = 0
+    B_START.BackgroundColor3 = Color3.fromRGB(40,40,80)
+
+    task.spawn(function()
+        local pasta = garantirPasta()
+        local total = #VFX_PACK
+
+        setStatus("⏳ Carregando " .. total .. " VFX — 0.6s cada...", Color3.fromRGB(255,200,80))
+        task.wait(0.3)
+
+        for i, vfxDef in ipairs(VFX_PACK) do
+            if not carregando then break end
+
+            if instancias[vfxDef.nome] then
+                carregados += 1
+                setProgress(carregados, total)
+                continue
+            end
+
+            updateItem(vfxDef.nome, "loading")
+            setStatus("⏳ ["..i.."/"..total.."]  "..vfxDef.nome:gsub("_"," "), Color3.fromRGB(255,220,80))
+
+            local ok, result = pcall(criarVFX, vfxDef, i)
+            if ok and result then
+                result.Parent = pasta
+                instancias[vfxDef.nome] = result
+                updateItem(vfxDef.nome, "ok")
+            else
+                setStatus("⚠ Erro: "..tostring(result), Color3.fromRGB(255,80,80))
+                task.wait(0.4)
+            end
+
+            carregados += 1
+            setProgress(carregados, total)
+            task.wait(CFG.DELAY) -- ← DELAY GRADUAL: evita crash mobile
+        end
+
+        carregando = false
+        B_START.BackgroundColor3 = Color3.fromRGB(80,30,180)
+        setStatus("✅ "..carregados.."/"..total.." VFX na pasta '"..CFG.PASTA_NOME.."'!", Color3.fromRGB(80,255,150))
+    end)
+end)
+
+B_STOP.MouseButton1Click:Connect(function()
+    if carregando then
+        carregando = false
+        B_START.BackgroundColor3 = Color3.fromRGB(80,30,180)
+        setStatus("⏹ Pausado em "..carregados.."/"..#VFX_PACK, Color3.fromRGB(255,180,60))
+    end
+end)
+
+B_CLEAR.MouseButton1Click:Connect(function()
+    carregando = false
+    instancias = {}
+    carregados = 0
+    if PASTA_RAIZ and PASTA_RAIZ.Parent then
+        PASTA_RAIZ:Destroy()
+        PASTA_RAIZ = nil
+    end
+    PBAR.Size = UDim2.new(0,0,1,0)
+    setStatus("🗑 Limpeza completa", Color3.fromRGB(255,100,100))
+    for nome in pairs(itemFrames) do updateItem(nome, "idle") end
+    B_START.BackgroundColor3 = Color3.fromRGB(80,30,180)
+end)
+
+-- Init
+construirLista()
+setStatus("✅ "..#VFX_PACK.." VFX prontas  |  Clique ▶ Iniciar", Color3.fromRGB(140,100,255))
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("  🎆 Shiro Dev Particle Pack v1")
+print("  "..#VFX_PACK.." VFX | Delay: "..CFG.DELAY.."s | Grid: "..CFG.COLUNAS.." col")
+print("  Explorer → workspace."..CFG.PASTA_NOME)
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
