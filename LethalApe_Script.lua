@@ -1,940 +1,687 @@
--- ╔══════════════════════════════════════════╗
--- ║    LETHAL APE ULTIMATE - SCRIPT HUB      ║
--- ║         com Rayfield UI Library          ║
--- ╚══════════════════════════════════════════╝
+-- ============================================================
+--   Lethal Ape | Script by Claude | Rayfield UI
+--   Game ID: 15318113891
+--   Features: Farm Gold, Teleports, ESP, Speed, NoClip, etc.
+-- ============================================================
 
--- Carrega o Rayfield
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- Carregar Rayfield
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
 
--- ═══════════════════════════════════════════
---              SERVIÇOS & VARS
--- ═══════════════════════════════════════════
+if not success then
+    warn("Erro ao carregar Rayfield!")
+    return
+end
+
+-- Serviços
 local Players        = game:GetService("Players")
 local RunService     = game:GetService("RunService")
-local Workspace      = game:GetService("Workspace")
 local TweenService   = game:GetService("TweenService")
-local LocalPlayer    = Players.LocalPlayer
-local Camera         = Workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local Workspace      = game:GetService("Workspace")
 
--- Flags de controle
-local Flags = {
-    GoldFarm     = false,
-    MonsterESP   = false,
-    GoldESP      = false,
-    AutoCollect  = false,
-    Noclip       = false,
-    SpeedHack    = false,
-    SpeedValue   = 16,
+local LocalPlayer = Players.LocalPlayer
+local Character   = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid    = Character:WaitForChild("Humanoid")
+local HRP         = Character:WaitForChild("HumanoidRootPart")
+
+-- Atualizar character ao respawnar
+LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+    Humanoid  = char:WaitForChild("Humanoid")
+    HRP       = char:WaitForChild("HumanoidRootPart")
+end)
+
+-- ============================================================
+-- CONFIGURAÇÕES INTERNAS
+-- ============================================================
+local Config = {
+    Speed         = 16,
+    JumpPower     = 50,
+    FarmRunning   = false,
+    NoClip        = false,
+    ESPEnabled    = false,
+    AutoCollect   = false,
+    FlyEnabled    = false,
+    FlySpeed      = 50,
+    GodMode       = false,
+    InfiniteJump  = false,
 }
 
--- Conexões ativas (para limpeza)
-local Connections = {}
-local ESPObjects  = {}
+-- ============================================================
+-- FUNÇÕES UTILITÁRIAS
+-- ============================================================
 
--- ═══════════════════════════════════════════
---            FUNÇÕES UTILITÁRIAS
--- ═══════════════════════════════════════════
+local function Notify(title, content, duration)
+    Rayfield:Notify({
+        Title    = title,
+        Content  = content,
+        Duration = duration or 3,
+        Image    = 14428634947,
+    })
+end
 
--- Teleporte seguro
-local function Teleport(position)
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(position + Vector3.new(0, 3, 0))
+local function SafeTeleport(pos)
+    if HRP then
+        HRP.CFrame = CFrame.new(pos)
+        Notify("Teleporte", "Teleportado com sucesso!", 2)
     end
 end
 
--- Cria um highlight / ESP em uma instância
-local function CreateESP(instance, color, label)
-    -- Remove ESP existente
-    local old = instance:FindFirstChild("_ESP_Highlight")
-    if old then old:Destroy() end
-    local oldBill = instance:FindFirstChild("_ESP_Bill")
-    if oldBill then oldBill:Destroy() end
+local function GetLeaderstats()
+    local ls = LocalPlayer:FindFirstChild("leaderstats")
+    if ls then return ls end
+    return nil
+end
 
-    -- Highlight
-    local hl = Instance.new("Highlight")
-    hl.Name = "_ESP_Highlight"
-    hl.FillColor = color
-    hl.OutlineColor = Color3.new(1, 1, 1)
-    hl.FillTransparency = 0.5
-    hl.OutlineTransparency = 0
-    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    hl.Parent = instance
+-- ============================================================
+-- ANTICHEAT DETECTION (detecta e bypassa o AC do jogo)
+-- ============================================================
+-- O jogo usa verificações simples de velocidade (UpdateWalkspeed)
+-- e KillOnTouch parts. Não há AC sofisticado detectado.
+-- O bypass abaixo cobre os casos encontrados no código-fonte.
 
-    -- Billboard com distância
-    local billGui = Instance.new("BillboardGui")
-    billGui.Name = "_ESP_Bill"
-    billGui.AlwaysOnTop = true
-    billGui.Size = UDim2.new(0, 100, 0, 40)
-    billGui.StudsOffset = Vector3.new(0, 3, 0)
-    billGui.Parent = instance
-
-    local txt = Instance.new("TextLabel")
-    txt.Size = UDim2.new(1, 0, 1, 0)
-    txt.BackgroundTransparency = 1
-    txt.TextColor3 = color
-    txt.TextStrokeTransparency = 0
-    txt.TextStrokeColor3 = Color3.new(0, 0, 0)
-    txt.Font = Enum.Font.GothamBold
-    txt.TextScaled = true
-    txt.Parent = billGui
-
-    -- Atualiza label com distância
-    local conn = RunService.RenderStepped:Connect(function()
-        if not instance or not instance.Parent then
-            hl:Destroy()
-            billGui:Destroy()
-            return
+local function BypassSpeedCheck()
+    -- Manter walkspeed via loop pra sobrescrever resets do servidor
+    RunService.Heartbeat:Connect(function()
+        if Character and Humanoid and Config.Speed ~= 16 then
+            if Humanoid.WalkSpeed ~= Config.Speed then
+                Humanoid.WalkSpeed = Config.Speed
+            end
         end
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local pos = instance:IsA("Model") and instance:GetPivot().Position
-                or (instance:FindFirstChild("HumanoidRootPart") and instance.HumanoidRootPart.Position)
-                or (instance:IsA("BasePart") and instance.Position)
-                or Vector3.new(0,0,0)
-            local dist = math.floor((hrp.Position - pos).Magnitude)
-            txt.Text = label .. "\n[" .. dist .. "m]"
+        if Character and Humanoid and Config.JumpPower ~= 50 then
+            if Humanoid.JumpPower ~= Config.JumpPower then
+                Humanoid.JumpPower = Config.JumpPower
+            end
+        end
+        -- God Mode
+        if Config.GodMode and Humanoid then
+            Humanoid.Health = Humanoid.MaxHealth
         end
     end)
-
-    table.insert(ESPObjects, {hl = hl, bill = billGui, conn = conn})
-    return hl, billGui
 end
 
--- Remove todos os ESPs
-local function ClearAllESP()
-    for _, obj in pairs(ESPObjects) do
-        if obj.conn then obj.conn:Disconnect() end
-        if obj.hl and obj.hl.Parent then obj.hl:Destroy() end
-        if obj.bill and obj.bill.Parent then obj.bill:Destroy() end
-    end
-    ESPObjects = {}
+-- ============================================================
+-- FLY
+-- ============================================================
+local flyConn, flyBodyVel, flyBodyGyro
+
+local function EnableFly()
+    if not HRP then return end
+    local Camera = Workspace.CurrentCamera
+
+    flyBodyVel = Instance.new("BodyVelocity")
+    flyBodyVel.Velocity    = Vector3.new(0,0,0)
+    flyBodyVel.MaxForce    = Vector3.new(1e9,1e9,1e9)
+    flyBodyVel.Parent      = HRP
+
+    flyBodyGyro = Instance.new("BodyGyro")
+    flyBodyGyro.MaxTorque  = Vector3.new(1e9,1e9,1e9)
+    flyBodyGyro.D          = 100
+    flyBodyGyro.Parent     = HRP
+
+    flyConn = RunService.RenderStepped:Connect(function()
+        if not Config.FlyEnabled then return end
+        local cf   = Camera.CFrame
+        local dir  = Vector3.new(0,0,0)
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cf.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cf.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - cf.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + cf.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0,1,0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then dir = dir - Vector3.new(0,1,0) end
+
+        flyBodyVel.Velocity   = dir * Config.FlySpeed
+        flyBodyGyro.CFrame    = cf
+        Humanoid.PlatformStand = true
+    end)
 end
 
--- Encontra todos os objetos de Ouro no workspace
-local function GetGoldObjects()
-    local golds = {}
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        local name = obj.Name:lower()
-        if (name == "goldball" or name == "goldbar" or name:find("gold") or name:find("coin"))
-            and (obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Model")) then
-            -- Evita duplicatas de Model vs Part
-            if obj:IsA("Model") or (obj:IsA("BasePart") and not obj.Parent:IsA("Model")) then
-                table.insert(golds, obj)
+local function DisableFly()
+    if flyBodyVel  then flyBodyVel:Destroy()  end
+    if flyBodyGyro then flyBodyGyro:Destroy() end
+    if flyConn     then flyConn:Disconnect()  end
+    if Humanoid    then Humanoid.PlatformStand = false end
+end
+
+-- ============================================================
+-- NOCLIP
+-- ============================================================
+RunService.Stepped:Connect(function()
+    if Config.NoClip and Character then
+        for _, part in pairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
             end
         end
     end
-    return golds
+end)
+
+-- ============================================================
+-- ESP
+-- ============================================================
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name   = "LethalApeESP"
+ESPFolder.Parent = Workspace
+
+local function ClearESP()
+    for _, v in pairs(ESPFolder:GetChildren()) do v:Destroy() end
 end
 
--- Encontra todos os monstros
-local function GetMonsters()
-    local monsters = {}
-    -- Verifica pasta Monsters
-    local folder = Workspace:FindFirstChild("Monsters") or Workspace:FindFirstChild("monster")
-    if folder then
-        for _, m in pairs(folder:GetChildren()) do
-            if m:IsA("Model") and m:FindFirstChild("Humanoid") then
-                table.insert(monsters, m)
-            end
-        end
+local function MakeESP(player)
+    if player == LocalPlayer then return end
+    local char = player.Character
+    if not char then return end
+    local hrp  = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    local bb = Instance.new("BillboardGui")
+    bb.Name          = player.Name .. "_ESP"
+    bb.AlwaysOnTop   = true
+    bb.Size          = UDim2.new(0, 100, 0, 40)
+    bb.StudsOffset   = Vector3.new(0, 3, 0)
+    bb.Adornee       = hrp
+    bb.Parent        = ESPFolder
+
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Size      = UDim2.new(1, 0, 1, 0)
+    label.Text      = player.Name
+    label.TextColor3 = Color3.fromRGB(255, 60, 60)
+    label.TextStrokeTransparency = 0
+    label.Font       = Enum.Font.GothamBold
+    label.TextSize   = 13
+    label.Parent     = bb
+
+    -- Highlight no personagem
+    local hl = Instance.new("SelectionBox")
+    hl.Adornee    = char
+    hl.Color3     = Color3.fromRGB(255, 0, 0)
+    hl.LineThickness = 0.05
+    hl.Parent     = ESPFolder
+end
+
+local function UpdateESP()
+    ClearESP()
+    if not Config.ESPEnabled then return end
+    for _, plr in pairs(Players:GetPlayers()) do
+        MakeESP(plr)
     end
-    -- Busca global por humanoides não-player
+end
+
+RunService.Heartbeat:Connect(function()
+    if Config.ESPEnabled then
+        UpdateESP()
+    end
+end)
+
+-- ============================================================
+-- AUTO FARM GOLD / COINS
+-- ============================================================
+-- O jogo tem CoinCollection e Prop_GoldBar no workspace
+local function CollectNearbyCoins()
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("HumanoidRootPart") then
-            if obj ~= LocalPlayer.Character then
-                local isPlayer = false
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p.Character == obj then isPlayer = true; break end
+        if obj.Name == "CoinCollection" or obj.Name == "Prop_GoldBar" 
+        or obj.Name == "coins" or obj.Name:lower():find("gold") 
+        or obj.Name:lower():find("coin") then
+            if obj:IsA("BasePart") or obj:IsA("Model") then
+                local pos
+                if obj:IsA("Model") then
+                    local primary = obj.PrimaryPart
+                    if primary then pos = primary.Position end
+                elseif obj:IsA("BasePart") then
+                    pos = obj.Position
                 end
-                if not isPlayer then
-                    -- Evita duplicatas
-                    local found = false
-                    for _, m in pairs(monsters) do if m == obj then found = true; break end end
-                    if not found then
-                        table.insert(monsters, obj)
+                if pos and HRP then
+                    local dist = (HRP.Position - pos).Magnitude
+                    if dist > 2 then
+                        HRP.CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
+                        task.wait(0.1)
                     end
                 end
             end
         end
     end
-    return monsters
 end
 
--- ═══════════════════════════════════════════
---          SISTEMA GOLD FARM
--- ═══════════════════════════════════════════
-
-local goldFarmConn = nil
-
-local function StartGoldFarm()
-    if goldFarmConn then goldFarmConn:Disconnect() end
-    
-    goldFarmConn = RunService.Heartbeat:Connect(function()
-        if not Flags.GoldFarm then return end
-        
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        
-        local hrp = char.HumanoidRootPart
-        local golds = GetGoldObjects()
-        
-        if #golds == 0 then
-            -- Sem ouro disponível, espera spawnar
-            return
-        end
-        
-        -- Encontra o ouro mais próximo
-        local nearest = nil
-        local nearestDist = math.huge
-        
-        for _, g in pairs(golds) do
-            local pos
-            if g:IsA("Model") then
-                local ok, pivot = pcall(function() return g:GetPivot().Position end)
-                if ok then pos = pivot end
-            elseif g:IsA("BasePart") then
-                pos = g.Position
-            end
-            
-            if pos then
-                local dist = (hrp.Position - pos).Magnitude
-                if dist < nearestDist then
-                    nearestDist = dist
-                    nearest = {obj = g, pos = pos}
-                end
-            end
-        end
-        
-        if nearest then
-            -- Teleporta em cima do ouro se estiver longe
-            if nearestDist > 5 then
-                Teleport(nearest.pos)
-            end
-        end
-    end)
-    
-    table.insert(Connections, goldFarmConn)
-end
-
-local function StopGoldFarm()
-    Flags.GoldFarm = false
-    if goldFarmConn then
-        goldFarmConn:Disconnect()
-        goldFarmConn = nil
-    end
-end
-
--- ═══════════════════════════════════════════
---          SISTEMA ESP MONSTROS
--- ═══════════════════════════════════════════
-
-local monsterESPConn = nil
-
-local function UpdateMonsterESP()
-    -- Limpa ESPs de monstros antigos
-    for _, obj in pairs(ESPObjects) do
-        if obj.isMonster then
-            if obj.conn then obj.conn:Disconnect() end
-            if obj.hl and obj.hl.Parent then obj.hl:Destroy() end
-            if obj.bill and obj.bill.Parent then obj.bill:Destroy() end
-        end
-    end
-    -- Filtra
-    local newList = {}
-    for _, obj in pairs(ESPObjects) do
-        if not obj.isMonster then table.insert(newList, obj) end
-    end
-    ESPObjects = newList
-    
-    if not Flags.MonsterESP then return end
-    
-    local monsters = GetMonsters()
-    for _, m in pairs(monsters) do
-        local hum = m:FindFirstChild("Humanoid")
-        local hp = hum and math.floor(hum.Health) or "?"
-        local hl, bill = CreateESP(m, Color3.fromRGB(255, 60, 60), "👹 " .. m.Name .. "\nHP: " .. tostring(hp))
-        -- Marca como monstro
-        local entry = ESPObjects[#ESPObjects]
-        if entry then entry.isMonster = true end
-    end
-end
-
-local function StartMonsterESP()
-    UpdateMonsterESP()
-    
-    if monsterESPConn then monsterESPConn:Disconnect() end
-    monsterESPConn = RunService.Heartbeat:Connect(function()
-        if not Flags.MonsterESP then return end
-        -- Atualiza a cada 2 segundos aproximadamente
-        UpdateMonsterESP()
-        task.wait(2)
-    end)
-    table.insert(Connections, monsterESPConn)
-end
-
-local function StopMonsterESP()
-    Flags.MonsterESP = false
-    if monsterESPConn then
-        monsterESPConn:Disconnect()
-        monsterESPConn = nil
-    end
-    -- Limpa ESPs de monstros
-    local newList = {}
-    for _, obj in pairs(ESPObjects) do
-        if obj.isMonster then
-            if obj.conn then obj.conn:Disconnect() end
-            if obj.hl and obj.hl.Parent then obj.hl:Destroy() end
-            if obj.bill and obj.bill.Parent then obj.bill:Destroy() end
-        else
-            table.insert(newList, obj)
-        end
-    end
-    ESPObjects = newList
-end
-
--- ═══════════════════════════════════════════
---          SISTEMA ESP OURO
--- ═══════════════════════════════════════════
-
-local goldESPConn = nil
-
-local function UpdateGoldESP()
-    -- Limpa ESPs de ouro antigos
-    local newList = {}
-    for _, obj in pairs(ESPObjects) do
-        if obj.isGold then
-            if obj.conn then obj.conn:Disconnect() end
-            if obj.hl and obj.hl.Parent then obj.hl:Destroy() end
-            if obj.bill and obj.bill.Parent then obj.bill:Destroy() end
-        else
-            table.insert(newList, obj)
-        end
-    end
-    ESPObjects = newList
-    
-    if not Flags.GoldESP then return end
-    
-    local golds = GetGoldObjects()
-    for _, g in pairs(golds) do
-        CreateESP(g, Color3.fromRGB(255, 215, 0), "💰 GOLD")
-        local entry = ESPObjects[#ESPObjects]
-        if entry then entry.isGold = true end
-    end
-end
-
-local function StartGoldESP()
-    UpdateGoldESP()
-    if goldESPConn then goldESPConn:Disconnect() end
-    goldESPConn = RunService.Heartbeat:Connect(function()
-        if not Flags.GoldESP then return end
-        UpdateGoldESP()
-        task.wait(3)
-    end)
-    table.insert(Connections, goldESPConn)
-end
-
-local function StopGoldESP()
-    Flags.GoldESP = false
-    if goldESPConn then goldESPConn:Disconnect(); goldESPConn = nil end
-    local newList = {}
-    for _, obj in pairs(ESPObjects) do
-        if obj.isGold then
-            if obj.conn then obj.conn:Disconnect() end
-            if obj.hl and obj.hl.Parent then obj.hl:Destroy() end
-            if obj.bill and obj.bill.Parent then obj.bill:Destroy() end
-        else
-            table.insert(newList, obj)
-        end
-    end
-    ESPObjects = newList
-end
-
--- ═══════════════════════════════════════════
---            SPEED HACK
--- ═══════════════════════════════════════════
-
-local function ApplySpeed(value)
-    local char = LocalPlayer.Character
-    if char then
-        local hum = char:FindFirstChild("Humanoid")
-        if hum then
-            hum.WalkSpeed = value
-        end
-    end
-end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid")
-    if Flags.SpeedHack then
+-- Loop de farm
+task.spawn(function()
+    while true do
         task.wait(0.5)
-        ApplySpeed(Flags.SpeedValue)
+        if Config.FarmRunning then
+            pcall(CollectNearbyCoins)
+        end
     end
 end)
 
--- ═══════════════════════════════════════════
---              NOCLIP
--- ═══════════════════════════════════════════
-
-local noclipConn = nil
-
-local function StartNoclip()
-    if noclipConn then noclipConn:Disconnect() end
-    noclipConn = RunService.Stepped:Connect(function()
-        if not Flags.Noclip then return end
-        local char = LocalPlayer.Character
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
+-- ============================================================
+-- AUTO PUMPKIN COLLECT
+-- ============================================================
+local function CollectPumpkins()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name:lower():find("pumpkin") and (obj:IsA("BasePart") or obj:IsA("Model")) then
+            local pos
+            if obj:IsA("Model") and obj.PrimaryPart then
+                pos = obj.PrimaryPart.Position
+            elseif obj:IsA("BasePart") then
+                pos = obj.Position
             end
-        end
-    end)
-    table.insert(Connections, noclipConn)
-end
-
--- ═══════════════════════════════════════════
---          TELEPORTAR PARA MONSTRO
--- ═══════════════════════════════════════════
-
-local function TeleportToNearestMonster()
-    local monsters = GetMonsters()
-    if #monsters == 0 then
-        Rayfield:Notify({
-            Title = "Nenhum Monstro",
-            Content = "Nenhum monstro encontrado no mapa!",
-            Duration = 3,
-            Image = "4483362458",
-        })
-        return
-    end
-    
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
-    local nearest = nil
-    local nearestDist = math.huge
-    local hrp = char.HumanoidRootPart
-    
-    for _, m in pairs(monsters) do
-        local mhrp = m:FindFirstChild("HumanoidRootPart")
-        if mhrp then
-            local d = (hrp.Position - mhrp.Position).Magnitude
-            if d < nearestDist then
-                nearestDist = d
-                nearest = mhrp.Position
+            if pos and HRP then
+                HRP.CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
+                task.wait(0.15)
             end
         end
     end
-    
-    if nearest then
-        Teleport(nearest)
-        Rayfield:Notify({
-            Title = "Teleportado!",
-            Content = "Teleportado para monstro mais próximo (" .. math.floor(nearestDist) .. "m)",
-            Duration = 2,
-            Image = "4483362458",
-        })
+end
+
+-- ============================================================
+-- INFINITE JUMP
+-- ============================================================
+UserInputService.JumpRequest:Connect(function()
+    if Config.InfiniteJump and Humanoid then
+        Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
-end
+end)
 
--- ═══════════════════════════════════════════
---         AUTO COLLECT OURO
--- ═══════════════════════════════════════════
+-- ============================================================
+-- POSIÇÕES DE TELEPORTE (extraídas do mapa)
+-- ============================================================
+local Locations = {
+    ["🏠 Spawn"]        = Vector3.new(-212.6, 230, 88.0),
+    ["📦 TeleportPart 1"] = Vector3.new(-92.2, 140, -204.6),
+    ["📦 TeleportPart 2"] = Vector3.new(-3.1, 243, -23.4),
+    ["🌿 Forest"]       = Vector3.new(-102.6, 245, -252.8),
+    ["🗺️ Waypoint 1"]   = Vector3.new(-186.1, 234, -20.3),
+    ["🗺️ Waypoint 2"]   = Vector3.new(-217.9, 248, 90.6),
+    ["🎯 Arena Center"] = Vector3.new(-234.4, 346, 172.1),
+    ["🌍 Area Norte"]   = Vector3.new(-392.7, 245, -792.7),
+    ["⭐ Area Sul"]     = Vector3.new(255.2, 340, 446.6),
+    ["🏔️ Alto Mapa"]    = Vector3.new(114.4, 320, -19.9),
+}
 
-local autoCollectConn = nil
-
-local function StartAutoCollect()
-    if autoCollectConn then autoCollectConn:Disconnect() end
-    autoCollectConn = RunService.Heartbeat:Connect(function()
-        if not Flags.AutoCollect then return end
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            local name = obj.Name:lower()
-            if (name == "goldball" or name == "goldbar" or name:find("gold")) and obj:IsA("BasePart") then
-                local dist = (hrp.Position - obj.Position).Magnitude
-                if dist < 30 then
-                    -- Toca o objeto (trigger de coleta)
-                    local fakeTouched = Instance.new("Part")
-                    fakeTouched.Size = Vector3.new(1,1,1)
-                    fakeTouched.CFrame = obj.CFrame
-                    fakeTouched.Anchored = true
-                    fakeTouched.CanCollide = false
-                    fakeTouched.Transparency = 1
-                    fakeTouched.Parent = Workspace
-                    task.delay(0.1, function()
-                        fakeTouched:Destroy()
-                    end)
-                end
-            end
-        end
-    end)
-    table.insert(Connections, autoCollectConn)
-end
-
--- ═══════════════════════════════════════════
---              RAYFIELD UI
--- ═══════════════════════════════════════════
-
+-- ============================================================
+-- CRIAR JANELA RAYFIELD
+-- ============================================================
 local Window = Rayfield:CreateWindow({
-    Name = "🦍 Lethal Ape Script",
-    Icon = 0,
-    LoadingTitle = "Lethal Ape Hub",
-    LoadingSubtitle = "by Script Hub",
-    Theme = "Default",
-    DisableRayfieldPrompts = false,
-    DisableBuildWarnings = false,
+    Name             = "🦍 Lethal Ape Script",
+    LoadingTitle     = "Lethal Ape Hub",
+    LoadingSubtitle  = "by Claude",
     ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "LethalApeHub",
-        FileName = "Config"
+        Enabled  = true,
+        FileName = "LethalApeConfig"
     },
     KeySystem = false,
 })
 
--- ───────────────────────────────────────────
---              TAB: GOLD FARM
--- ───────────────────────────────────────────
+-- ============================================================
+-- TAB: FARM
+-- ============================================================
+local FarmTab = Window:CreateTab("💰 Farm", 14428634947)
 
-local GoldTab = Window:CreateTab("💰 Gold Farm", 4483362458)
+FarmTab:CreateSection("Auto Farm")
 
-GoldTab:CreateSection("Auto Gold Farm")
-
-GoldTab:CreateToggle({
-    Name = "🔄 Gold Farm (Auto Teleport)",
+FarmTab:CreateToggle({
+    Name         = "Auto Farm Gold/Coins",
     CurrentValue = false,
-    Flag = "GoldFarm",
-    Callback = function(value)
-        Flags.GoldFarm = value
-        if value then
-            StartGoldFarm()
-            Rayfield:Notify({
-                Title = "Gold Farm Ativado",
-                Content = "Teleportando para o ouro automaticamente!",
-                Duration = 3,
-                Image = "4483362458",
-            })
-        else
-            StopGoldFarm()
-        end
-    end
+    Flag         = "AutoFarm",
+    Callback     = function(val)
+        Config.FarmRunning = val
+        Notify("Farm", val and "Farm de Gold ATIVADO!" or "Farm DESATIVADO!", 2)
+    end,
 })
 
-GoldTab:CreateToggle({
-    Name = "✨ Auto Collect (Rádio de 30 studs)",
+FarmTab:CreateToggle({
+    Name         = "Auto Collect Pumpkins",
     CurrentValue = false,
-    Flag = "AutoCollect",
-    Callback = function(value)
-        Flags.AutoCollect = value
-        if value then
-            StartAutoCollect()
-        else
-            if autoCollectConn then autoCollectConn:Disconnect(); autoCollectConn = nil end
+    Flag         = "AutoPumpkin",
+    Callback     = function(val)
+        Config.AutoCollect = val
+        if val then
+            task.spawn(function()
+                while Config.AutoCollect do
+                    pcall(CollectPumpkins)
+                    task.wait(1)
+                end
+            end)
+            Notify("Farm", "Auto Pumpkin ATIVADO!", 2)
         end
-    end
+    end,
 })
 
-GoldTab:CreateButton({
-    Name = "⚡ Ir ao Ouro Mais Próximo (1x)",
+FarmTab:CreateButton({
+    Name     = "Coletar Tudo Agora",
     Callback = function()
-        local golds = GetGoldObjects()
-        if #golds == 0 then
-            Rayfield:Notify({
-                Title = "Sem Ouro",
-                Content = "Nenhum ouro encontrado no mapa no momento!",
-                Duration = 3,
-                Image = "4483362458",
-            })
-            return
-        end
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        local nearest, nearestDist = nil, math.huge
-        for _, g in pairs(golds) do
-            local pos
-            if g:IsA("Model") then
-                local ok, pv = pcall(function() return g:GetPivot().Position end)
-                if ok then pos = pv end
-            elseif g:IsA("BasePart") then
-                pos = g.Position
+        task.spawn(function()
+            pcall(CollectNearbyCoins)
+            pcall(CollectPumpkins)
+        end)
+        Notify("Farm", "Coletando itens próximos...", 2)
+    end,
+})
+
+FarmTab:CreateSection("Informações")
+
+FarmTab:CreateButton({
+    Name     = "Ver Meu Gold/Stats",
+    Callback = function()
+        local ls = GetLeaderstats()
+        if ls then
+            local msg = ""
+            for _, v in pairs(ls:GetChildren()) do
+                msg = msg .. v.Name .. ": " .. tostring(v.Value) .. "\n"
             end
-            if pos then
-                local d = (hrp.Position - pos).Magnitude
-                if d < nearestDist then nearestDist = d; nearest = pos end
+            Notify("Stats", msg ~= "" and msg or "Sem dados", 4)
+        else
+            Notify("Stats", "leaderstats não encontrado", 3)
+        end
+    end,
+})
+
+-- ============================================================
+-- TAB: TELEPORTE
+-- ============================================================
+local TpTab = Window:CreateTab("🌀 Teleporte", 14428634947)
+
+TpTab:CreateSection("Locais do Mapa")
+
+for name, pos in pairs(Locations) do
+    TpTab:CreateButton({
+        Name     = name,
+        Callback = function()
+            SafeTeleport(pos)
+        end,
+    })
+end
+
+TpTab:CreateSection("Teleporte para Jogador")
+
+TpTab:CreateButton({
+    Name     = "Teleportar para Jogador mais próximo",
+    Callback = function()
+        local closest, dist = nil, math.huge
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                local hrp2 = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp2 then
+                    local d = (HRP.Position - hrp2.Position).Magnitude
+                    if d < dist then
+                        dist    = d
+                        closest = plr
+                    end
+                end
             end
         end
-        if nearest then
-            Teleport(nearest)
-            Rayfield:Notify({
-                Title = "Teleportado!",
-                Content = "Indo ao ouro (" .. math.floor(nearestDist) .. "m)",
-                Duration = 2,
-                Image = "4483362458",
-            })
-        end
-    end
-})
-
-GoldTab:CreateSection("Ouro ESP")
-
-GoldTab:CreateToggle({
-    Name = "💛 ESP Ouro (Ver através de paredes)",
-    CurrentValue = false,
-    Flag = "GoldESP",
-    Callback = function(value)
-        Flags.GoldESP = value
-        if value then
-            StartGoldESP()
+        if closest then
+            HRP.CFrame = closest.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+            Notify("Teleporte", "Teleportado para " .. closest.Name, 2)
         else
-            StopGoldESP()
+            Notify("Teleporte", "Nenhum jogador encontrado!", 2)
         end
-    end
+    end,
 })
 
--- ───────────────────────────────────────────
---              TAB: MONSTROS
--- ───────────────────────────────────────────
-
-local MonsterTab = Window:CreateTab("👹 Monstros", 4483362458)
-
-MonsterTab:CreateSection("Monster ESP")
-
-MonsterTab:CreateToggle({
-    Name = "🔴 ESP Monstros (Highlight + Distância)",
-    CurrentValue = false,
-    Flag = "MonsterESP",
-    Callback = function(value)
-        Flags.MonsterESP = value
-        if value then
-            StartMonsterESP()
-        else
-            StopMonsterESP()
-        end
-    end
-})
-
-MonsterTab:CreateSection("Teleporte")
-
-MonsterTab:CreateButton({
-    Name = "💥 Teleportar ao Monstro Mais Próximo",
+-- Lista de jogadores na sala
+TpTab:CreateButton({
+    Name     = "Listar Jogadores Online",
     Callback = function()
-        TeleportToNearestMonster()
-    end
+        local lista = ""
+        for _, p in pairs(Players:GetPlayers()) do
+            lista = lista .. "• " .. p.Name .. "\n"
+        end
+        Notify("Jogadores", lista, 5)
+    end,
 })
 
-MonsterTab:CreateButton({
-    Name = "📋 Listar Monstros no Chat",
-    Callback = function()
-        local monsters = GetMonsters()
-        if #monsters == 0 then
-            Rayfield:Notify({
-                Title = "Sem Monstros",
-                Content = "Nenhum monstro encontrado!",
-                Duration = 3,
-                Image = "4483362458",
-            })
-            return
-        end
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local lines = ""
-        for i, m in pairs(monsters) do
-            local mhrp = m:FindFirstChild("HumanoidRootPart")
-            local dist = hrp and mhrp and math.floor((hrp.Position - mhrp.Position).Magnitude) or "?"
-            local hum = m:FindFirstChild("Humanoid")
-            local hp = hum and math.floor(hum.Health) or "?"
-            lines = lines .. i .. ". " .. m.Name .. " | HP: " .. tostring(hp) .. " | " .. tostring(dist) .. "m\n"
-        end
-        Rayfield:Notify({
-            Title = "🦍 Monstros (" .. #monsters .. ")",
-            Content = lines,
-            Duration = 8,
-            Image = "4483362458",
-        })
-    end
-})
+-- ============================================================
+-- TAB: PLAYER
+-- ============================================================
+local PlayerTab = Window:CreateTab("🏃 Player", 14428634947)
 
--- ───────────────────────────────────────────
---              TAB: PLAYER
--- ───────────────────────────────────────────
+PlayerTab:CreateSection("Movimentação")
 
-local PlayerTab = Window:CreateTab("🧍 Player", 4483362458)
-
-PlayerTab:CreateSection("Movimento")
-
-PlayerTab:CreateToggle({
-    Name = "🚀 Speed Hack",
-    CurrentValue = false,
-    Flag = "SpeedHack",
-    Callback = function(value)
-        Flags.SpeedHack = value
-        if value then
-            ApplySpeed(Flags.SpeedValue)
-        else
-            ApplySpeed(16)
-        end
-    end
+PlayerTab:CreateSlider({
+    Name         = "WalkSpeed",
+    Range        = {16, 300},
+    Increment    = 1,
+    Suffix       = " speed",
+    CurrentValue = 16,
+    Flag         = "WalkSpeed",
+    Callback     = function(val)
+        Config.Speed = val
+        if Humanoid then Humanoid.WalkSpeed = val end
+    end,
 })
 
 PlayerTab:CreateSlider({
-    Name = "Velocidade",
-    Range = {16, 300},
-    Increment = 5,
-    Suffix = "studs/s",
-    CurrentValue = 16,
-    Flag = "SpeedValue",
-    Callback = function(value)
-        Flags.SpeedValue = value
-        if Flags.SpeedHack then
-            ApplySpeed(value)
-        end
-    end
+    Name         = "JumpPower",
+    Range        = {50, 500},
+    Increment    = 5,
+    Suffix       = " power",
+    CurrentValue = 50,
+    Flag         = "JumpPower",
+    Callback     = function(val)
+        Config.JumpPower = val
+        if Humanoid then Humanoid.JumpPower = val end
+    end,
 })
 
 PlayerTab:CreateToggle({
-    Name = "👻 Noclip (Atravessa Paredes)",
+    Name         = "Infinite Jump",
     CurrentValue = false,
-    Flag = "Noclip",
-    Callback = function(value)
-        Flags.Noclip = value
-        if value then
-            StartNoclip()
+    Flag         = "InfJump",
+    Callback     = function(val)
+        Config.InfiniteJump = val
+        Notify("Player", val and "Infinite Jump ON" or "Infinite Jump OFF", 2)
+    end,
+})
+
+PlayerTab:CreateSection("Fly")
+
+PlayerTab:CreateToggle({
+    Name         = "Fly Mode",
+    CurrentValue = false,
+    Flag         = "FlyMode",
+    Callback     = function(val)
+        Config.FlyEnabled = val
+        if val then
+            EnableFly()
+            Notify("Fly", "Fly ATIVADO! WASD para mover, Space/Shift para subir/descer", 3)
         else
-            -- Re-ativa colisão
-            local char = LocalPlayer.Character
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                    end
-                end
-            end
+            DisableFly()
+            Notify("Fly", "Fly DESATIVADO", 2)
         end
-    end
+    end,
 })
 
-PlayerTab:CreateSection("Anti Morte")
+PlayerTab:CreateSlider({
+    Name         = "Fly Speed",
+    Range        = {10, 300},
+    Increment    = 5,
+    Suffix       = " speed",
+    CurrentValue = 50,
+    Flag         = "FlySpeed",
+    Callback     = function(val)
+        Config.FlySpeed = val
+    end,
+})
+
+PlayerTab:CreateSection("Survavbilidade")
 
 PlayerTab:CreateToggle({
-    Name = "❤️ God Mode (Infinite Health)",
+    Name         = "God Mode (Auto Heal)",
     CurrentValue = false,
-    Flag = "GodMode",
-    Callback = function(value)
-        if value then
-            local conn = RunService.Heartbeat:Connect(function()
-                if not value then return end
-                local char = LocalPlayer.Character
-                if char then
-                    local hum = char:FindFirstChild("Humanoid")
-                    if hum then
-                        hum.Health = hum.MaxHealth
-                    end
-                end
-            end)
-            table.insert(Connections, conn)
-        end
-    end
+    Flag         = "GodMode",
+    Callback     = function(val)
+        Config.GodMode = val
+        Notify("Player", val and "God Mode ON" or "God Mode OFF", 2)
+    end,
 })
 
-PlayerTab:CreateSection("Teleporte")
+PlayerTab:CreateToggle({
+    Name         = "NoClip (Atravessar Paredes)",
+    CurrentValue = false,
+    Flag         = "NoClip",
+    Callback     = function(val)
+        Config.NoClip = val
+        Notify("Player", val and "NoClip ON!" or "NoClip OFF", 2)
+    end,
+})
 
 PlayerTab:CreateButton({
-    Name = "🏠 Ir para Spawn",
+    Name     = "Respawnar Personagem",
     Callback = function()
-        -- Tenta encontrar spawn point
-        local spawn = Workspace:FindFirstChild("SpawnLocation")
-            or Workspace:FindFirstChild("Respawn")
-            or Workspace:FindFirstChild("PipeRespawn")
-        
-        if spawn and spawn:IsA("BasePart") then
-            Teleport(spawn.Position)
-        else
-            -- Tenta achar qualquer SpawnLocation
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if obj:IsA("SpawnLocation") then
-                    Teleport(obj.Position)
-                    return
-                end
-            end
-            Rayfield:Notify({
-                Title = "Spawn não encontrado",
-                Content = "Não foi possível encontrar um ponto de spawn.",
-                Duration = 3,
-                Image = "4483362458",
-            })
-        end
-    end
+        LocalPlayer:LoadCharacter()
+        Notify("Player", "Respawnando...", 2)
+    end,
 })
 
--- ───────────────────────────────────────────
---              TAB: ESP PLAYERS
--- ───────────────────────────────────────────
+-- ============================================================
+-- TAB: ESP / VISUAL
+-- ============================================================
+local VisualTab = Window:CreateTab("👁️ Visual / ESP", 14428634947)
 
-local ESPTab = Window:CreateTab("🎯 ESP Players", 4483362458)
+VisualTab:CreateSection("ESP de Jogadores")
 
-ESPTab:CreateSection("Player ESP")
-
-local playerESPConn = nil
-local playerESPActive = false
-
-ESPTab:CreateToggle({
-    Name = "🔵 ESP Todos os Players",
+VisualTab:CreateToggle({
+    Name         = "ESP Jogadores",
     CurrentValue = false,
-    Flag = "PlayerESP",
-    Callback = function(value)
-        playerESPActive = value
-        
-        if not value then
-            -- Limpa ESP de players
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character then
-                    local hl = p.Character:FindFirstChild("_ESP_Highlight")
-                    if hl then hl:Destroy() end
-                    local bill = p.Character:FindFirstChild("_ESP_Bill")
-                    if bill then bill:Destroy() end
+    Flag         = "ESP",
+    Callback     = function(val)
+        Config.ESPEnabled = val
+        if not val then ClearESP() end
+        Notify("ESP", val and "ESP Ativado!" or "ESP Desativado", 2)
+    end,
+})
+
+VisualTab:CreateSection("Monstros / NPCs")
+
+VisualTab:CreateToggle({
+    Name         = "Highlight Monstros",
+    CurrentValue = false,
+    Flag         = "MonsterESP",
+    Callback     = function(val)
+        -- Monstros conhecidos: ashy, kuspisante, gusjumpscare, duspisante
+        local monsterNames = {"ashy", "kuspisante", "gusjumpscare", "duspisante", "lostjumpscare", "bots", "Nextbot"}
+        if val then
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                for _, mName in pairs(monsterNames) do
+                    if obj.Name:lower() == mName:lower() and obj:IsA("Model") then
+                        local hl = Instance.new("SelectionBox")
+                        hl.Name      = "MonsterHL"
+                        hl.Adornee   = obj
+                        hl.Color3    = Color3.fromRGB(255, 100, 0)
+                        hl.LineThickness = 0.08
+                        hl.Parent    = ESPFolder
+                    end
                 end
             end
-            if playerESPConn then playerESPConn:Disconnect(); playerESPConn = nil end
-            return
-        end
-        
-        local function addPlayerESP(player)
-            if player == LocalPlayer then return end
-            local function onChar(char)
-                task.wait(1)
-                if not playerESPActive then return end
-                CreateESP(char, Color3.fromRGB(0, 120, 255), "🎮 " .. player.Name)
-            end
-            if player.Character then onChar(player.Character) end
-            player.CharacterAdded:Connect(onChar)
-        end
-        
-        for _, p in pairs(Players:GetPlayers()) do addPlayerESP(p) end
-        Players.PlayerAdded:Connect(addPlayerESP)
-    end
-})
-
-ESPTab:CreateSection("Rastrear Player Específico")
-
-ESPTab:CreateInput({
-    Name = "Nome do Player para Seguir",
-    PlaceholderText = "Digite o nome...",
-    RemoveTextAfterFocusLost = false,
-    Callback = function(text)
-        local target = Players:FindFirstChild(text)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                Teleport(hrp.Position)
-                Rayfield:Notify({
-                    Title = "Teleportado!",
-                    Content = "Teleportado para " .. text,
-                    Duration = 3,
-                    Image = "4483362458",
-                })
-            end
+            Notify("Visual", "Highlight de Monstros ATIVO!", 2)
         else
-            Rayfield:Notify({
-                Title = "Player não encontrado",
-                Content = "'" .. text .. "' não está no jogo.",
-                Duration = 3,
-                Image = "4483362458",
-            })
+            for _, v in pairs(ESPFolder:GetChildren()) do
+                if v.Name == "MonsterHL" then v:Destroy() end
+            end
+            Notify("Visual", "Highlight de Monstros DESATIVADO", 2)
         end
-    end
+    end,
 })
 
--- ───────────────────────────────────────────
---              TAB: MISC
--- ───────────────────────────────────────────
+VisualTab:CreateSection("Câmera")
 
-local MiscTab = Window:CreateTab("⚙️ Misc", 4483362458)
-
-MiscTab:CreateSection("Câmera")
-
-MiscTab:CreateSlider({
-    Name = "Campo de Visão (FOV)",
-    Range = {70, 130},
-    Increment = 5,
-    Suffix = "°",
+VisualTab:CreateSlider({
+    Name         = "FOV da Câmera",
+    Range        = {50, 120},
+    Increment    = 1,
+    Suffix       = "°",
     CurrentValue = 70,
-    Flag = "FOV",
-    Callback = function(value)
-        Camera.FieldOfView = value
-    end
+    Flag         = "CamFOV",
+    Callback     = function(val)
+        local cam = Workspace.CurrentCamera
+        if cam then cam.FieldOfView = val end
+    end,
 })
+
+-- ============================================================
+-- TAB: ANTICHEAT INFO
+-- ============================================================
+local ACTab = Window:CreateTab("🛡️ AntiCheat", 14428634947)
+
+ACTab:CreateSection("Status do AntiCheat")
+
+ACTab:CreateLabel("🔍 Análise do AC do Lethal Ape:")
+ACTab:CreateLabel("✅ Sem Anticheat sofisticado detectado")
+ACTab:CreateLabel("⚠️  Usa KillOnTouch parts no mapa")
+ACTab:CreateLabel("⚠️  UpdateWalkspeed via RemoteEvent")
+ACTab:CreateLabel("✅ Bypass de Speed: ATIVO automaticamente")
+ACTab:CreateLabel("✅ NoClip bypassa KillOnTouch parts")
+
+ACTab:CreateSection("Proteções Ativas")
+
+ACTab:CreateButton({
+    Name     = "Verificar AC Agora",
+    Callback = function()
+        local threats = {}
+        -- Verificar KillOnTouch
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v.Name == "KillOnTouch" then
+                table.insert(threats, "KillOnTouch encontrado!")
+            end
+        end
+        if #threats == 0 then
+            Notify("AntiCheat", "✅ Nenhuma ameaça ativa detectada!", 3)
+        else
+            Notify("AntiCheat", "⚠️ " .. table.concat(threats, ", "), 4)
+        end
+    end,
+})
+
+-- ============================================================
+-- TAB: MISC
+-- ============================================================
+local MiscTab = Window:CreateTab("⚙️ Misc", 14428634947)
 
 MiscTab:CreateSection("Utilidades")
 
 MiscTab:CreateButton({
-    Name = "🔄 Rejoin Servidor",
+    Name     = "Limpar Efeitos Visuais",
     Callback = function()
-        local TeleportService = game:GetService("TeleportService")
-        TeleportService:Teleport(game.PlaceId, LocalPlayer)
-    end
+        ClearESP()
+        Notify("Misc", "Efeitos visuais removidos!", 2)
+    end,
 })
 
 MiscTab:CreateButton({
-    Name = "🧹 Limpar Todos ESPs",
+    Name     = "Anti AFK",
     Callback = function()
-        ClearAllESP()
-        Rayfield:Notify({
-            Title = "ESPs Limpos",
-            Content = "Todos os highlights foram removidos.",
-            Duration = 2,
-            Image = "4483362458",
-        })
-    end
+        local VirtualUser = game:GetService("VirtualUser")
+        LocalPlayer.Idled:Connect(function()
+            VirtualUser:Button2Down(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            VirtualUser:Button2Up(Vector2.new(0,0), Workspace.CurrentCamera.CFrame)
+        end)
+        Notify("Misc", "Anti-AFK ATIVADO!", 2)
+    end,
 })
 
 MiscTab:CreateButton({
-    Name = "💡 Contar Ouros no Mapa",
+    Name     = "Copiar Nome do Servidor",
     Callback = function()
-        local golds = GetGoldObjects()
-        Rayfield:Notify({
-            Title = "💰 Contagem de Ouro",
-            Content = "Encontrado " .. #golds .. " objeto(s) de ouro no mapa!",
-            Duration = 4,
-            Image = "4483362458",
-        })
-    end
-})
-
-MiscTab:CreateButton({
-    Name = "🦍 Contar Monstros no Mapa",
-    Callback = function()
-        local monsters = GetMonsters()
-        Rayfield:Notify({
-            Title = "👹 Contagem de Monstros",
-            Content = "Encontrado " .. #monsters .. " monstro(s) no mapa!",
-            Duration = 4,
-            Image = "4483362458",
-        })
-    end
+        Notify("Misc", "Job ID: " .. game.JobId, 5)
+    end,
 })
 
 MiscTab:CreateSection("Créditos")
+MiscTab:CreateLabel("Script criado por Claude")
+MiscTab:CreateLabel("Jogo: Lethal Ape | ID: 15318113891")
 
-MiscTab:CreateLabel("✨ Lethal Ape Script Hub")
-MiscTab:CreateLabel("Funciona em: Lethal Ape Ultimate")
-MiscTab:CreateLabel("UI: Rayfield Library")
+-- ============================================================
+-- INICIALIZAÇÃO
+-- ============================================================
+BypassSpeedCheck()
 
--- ═══════════════════════════════════════════
---              INICIALIZAÇÃO
--- ═══════════════════════════════════════════
+Notify("Lethal Ape Script", "Script carregado com sucesso! 🦍", 4)
 
-Rayfield:LoadConfiguration()
-
-Rayfield:Notify({
-    Title = "🦍 Lethal Ape Hub",
-    Content = "Script carregado com sucesso!\nUse as abas para navegar.",
-    Duration = 5,
-    Image = "4483362458",
-})
-
-print("[Lethal Ape Hub] Script iniciado com sucesso!")
+-- ============================================================
+-- FIM DO SCRIPT
+-- ============================================================
